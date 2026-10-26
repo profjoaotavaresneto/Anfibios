@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Salto no Lago: jogo sobre anfíbios</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&family=Nunito:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#e4f1e6;--surface:#ffffff;--ink:#12362f;--muted:#4b6b62;--pond:#1f6f5c;--leaf:#8fc92f;--sun:#f07d2a;--ok:#1d7a3e;--bad:#b3341f;--okbg:#d4efd9;--badbg:#f6d9d3;--line:#b9d3c4}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e2a26;--surface:#17413a;--ink:#e8f5e9;--muted:#a5c7bb;--pond:#5fc2a4;--line:#2d6358;--okbg:#1e5a37;--badbg:#6a2a20;--ok:#8be3a3;--bad:#ffb4a5}}
+:root[data-theme="dark"]{--bg:#0e2a26;--surface:#17413a;--ink:#e8f5e9;--muted:#a5c7bb;--pond:#5fc2a4;--line:#2d6358;--okbg:#1e5a37;--badbg:#6a2a20;--ok:#8be3a3;--bad:#ffb4a5}
+*{box-sizing:border-box}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:"Nunito",system-ui,sans-serif;font-size:17px;line-height:1.5;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+main{max-width:560px;margin:0 auto;padding:20px 18px 32px}
+h1,h2{font-family:"Fredoka",system-ui,sans-serif;margin:0;line-height:1.15}
+h1{font-size:2.3rem;font-weight:700}
+h2{font-size:1.35rem;font-weight:500}
+.sub{color:var(--muted);margin:10px 0 24px}
+button{font:inherit;cursor:pointer;border:2px solid var(--line);background:var(--surface);color:var(--ink);border-radius:14px;padding:14px 16px;text-align:left;width:100%;min-height:52px}
+button:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+.go{background:var(--sun);border-color:var(--sun);color:#1b1206;font-family:"Fredoka",sans-serif;font-weight:700;font-size:1.15rem;text-align:center}
+.path{display:flex;gap:6px;margin:6px 0 22px}
+.pad{flex:1;height:12px;border-radius:50%/60%;background:var(--line)}
+.pad.done{background:var(--leaf)}
+.pad.now{background:var(--sun)}
+.opts{display:grid;gap:10px;margin:18px 0}
+.opts button.right{background:var(--okbg);border-color:var(--ok);color:var(--ok);font-weight:700}
+.opts button.wrong{background:var(--badbg);border-color:var(--bad);color:var(--bad)}
+.opts button:disabled{cursor:default}
+.fb{border-left:5px solid var(--pond);background:var(--surface);padding:12px 14px;border-radius:0 12px 12px 0;margin-bottom:16px}
+.fb b{display:block;font-family:"Fredoka",sans-serif;font-weight:500}
+.top{display:flex;justify-content:space-between;color:var(--muted);font-weight:700}
+.big{font-family:"Fredoka",sans-serif;font-size:3.4rem;font-weight:700;line-height:1}
+.hidden{display:none}
+.frog{width:84px;height:auto;display:block;margin-bottom:14px}
+@media (prefers-reduced-motion:no-preference){.frog.hop{animation:hop .6s ease-out 1}@keyframes hop{40%{transform:translateY(-18px)}}}
+</style>
+</head>
+<body>
+<main>
+<section id="start">
+<svg class="frog" viewBox="0 0 100 70" aria-hidden="true"><ellipse cx="50" cy="44" rx="40" ry="22" fill="#8fc92f"/><circle cx="30" cy="22" r="13" fill="#8fc92f"/><circle cx="70" cy="22" r="13" fill="#8fc92f"/><circle cx="30" cy="21" r="7" fill="#fff"/><circle cx="70" cy="21" r="7" fill="#fff"/><circle cx="31" cy="22" r="3.5" fill="#12362f"/><circle cx="69" cy="22" r="3.5" fill="#12362f"/><path d="M30 48 Q50 60 70 48" stroke="#12362f" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="62" cy="40" r="4" fill="#f07d2a"/><circle cx="40" cy="38" r="3" fill="#f07d2a"/></svg>
+<h1>Salto no Lago</h1>
+<p class="sub">Dez perguntas sobre os anfíbios. Cada acerto faz a perereca saltar uma vitória-régia. Errou? Leia a explicação e siga em frente.</p>
+<button class="go" id="play">Começar</button>
+</section>
+
+<section id="game" class="hidden">
+<div class="top"><span id="qn"></span><span id="sc"></span></div>
+<div class="path" id="path" aria-hidden="true"></div>
+<h2 id="q"></h2>
+<div class="opts" id="opts"></div>
+<div class="fb hidden" id="fb" role="status"></div>
+<button class="go hidden" id="next">Próxima</button>
+</section>
+
+<section id="end" class="hidden">
+<svg class="frog hop" viewBox="0 0 100 70" aria-hidden="true"><ellipse cx="50" cy="44" rx="40" ry="22" fill="#8fc92f"/><circle cx="30" cy="22" r="13" fill="#8fc92f"/><circle cx="70" cy="22" r="13" fill="#8fc92f"/><circle cx="30" cy="21" r="7" fill="#fff"/><circle cx="70" cy="21" r="7" fill="#fff"/><circle cx="31" cy="22" r="3.5" fill="#12362f"/><circle cx="69" cy="22" r="3.5" fill="#12362f"/><path d="M30 48 Q50 60 70 48" stroke="#12362f" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
+<div class="big" id="final"></div>
+<h2 id="rank" style="margin:10px 0 8px"></h2>
+<p class="sub" id="msg"></p>
+<button class="go" id="again">Jogar de novo</button>
+</section>
+</main>
+<script>
+var Q=[
+{q:"Qual característica da pele dos anfíbios permite que eles respirem também por ela?",o:["Fina, úmida e sem escamas","Coberta de penas","Grossa e seca","Coberta de pelos"],a:0,e:"A pele é fina, úmida e permeável, o que permite trocas de gases. Por isso a respiração cutânea é tão importante."},
+{q:"A palavra “anfíbio” lembra uma “vida dupla”. Por quê?",o:["Vivem só na água salgada","Passam por uma fase aquática e outra terrestre","Têm dois corações completos","Põem ovos duas vezes por dia"],a:1,e:"Muitos anfíbios nascem na água, como girinos, e depois vivem boa parte da vida em terra úmida."},
+{q:"Como se chama a transformação do girino em adulto?",o:["Fotossíntese","Hibernação","Metamorfose","Fecundação"],a:2,e:"Na metamorfose o girino perde a cauda, ganha pernas e troca as brânquias pelos pulmões."},
+{q:"Qual destes animais é um anfíbio?",o:["Lagarto","Salamandra","Jacaré","Tartaruga"],a:1,e:"Lagarto, jacaré e tartaruga são répteis. A salamandra é anfíbio e tem cauda mesmo quando adulta."},
+{q:"Verdadeiro ou falso: os ovos dos anfíbios têm casca dura e podem ficar em terra seca.",o:["Verdadeiro","Falso"],a:1,e:"Falso. Os ovos não têm casca dura e secariam fora de um ambiente úmido. Por isso são postos na água ou em locais bem molhados."},
+{q:"Os anfíbios são ectotérmicos. O que isso quer dizer?",o:["Produzem muito calor no corpo","A temperatura do corpo varia com a do ambiente","Só vivem em lugares gelados","Mantêm o corpo sempre a 37 °C"],a:1,e:"Eles dependem do ambiente para se aquecer ou esfriar. Por isso ficam ao sol ou em locais úmidos e sombreados."},
+{q:"Em qual grupo ficam os sapos, as rãs e as pererecas?",o:["Anuros (sem cauda)","Gimnofionas (sem pernas)","Caudados (com cauda)","Répteis"],a:0,e:"Anuros significa “sem cauda”. As salamandras são caudadas, e as cobras-cegas são gimnofionas."},
+{q:"O girino respira principalmente por…",o:["Pulmões","Brânquias","Traqueias","Nadadeiras"],a:1,e:"Na fase de girino a respiração é branquial. No adulto passam a atuar os pulmões e a pele."},
+{q:"Muitos anfíbios adultos comem insetos. Qual é o benefício disso?",o:["Aumentam as pragas nas plantações","Ajudam a controlar populações de insetos","Eliminam todas as plantas","Não têm efeito nenhum"],a:1,e:"Sapos e pererecas são predadores naturais de insetos, como mosquitos e baratas, e ajudam no equilíbrio do ambiente."},
+{q:"Por que os anfíbios são bons indicadores de poluição?",o:["Porque têm pele permeável e absorvem substâncias do ambiente","Porque brilham no escuro","Porque vivem em desertos","Porque não precisam de água"],a:0,e:"A pele permeável absorve também poluentes. Quando os anfíbios somem de um local, é sinal de que a água ou o solo pode estar contaminado."}
+];
+var i=0,pts=0,done=false;
+var $=function(id){return document.getElementById(id)};
+function shuffle(a){for(var k=a.length-1;k>0;k--){var j=Math.floor(Math.random()*(k+1));var t=a[k];a[k]=a[j];a[j]=t}return a}
+function show(id){["start","game","end"].forEach(function(s){$(s).classList.toggle("hidden",s!==id)});window.scrollTo(0,0)}
+function path(){var h="";for(var k=0;k<Q.length;k++){h+='<span class="pad '+(k<i?'done':k===i?'now':'')+'"></span>'}$("path").innerHTML=h}
+function render(){
+ done=false;var d=Q[i];
+ $("qn").textContent="Pergunta "+(i+1)+" de "+Q.length;
+ $("sc").textContent=pts+" "+(pts===1?"acerto":"acertos");
+ path();$("q").textContent=d.q;
+ $("fb").classList.add("hidden");$("next").classList.add("hidden");
+ var idx=d.o.map(function(_,k){return k});
+ if(d.o.length>2)shuffle(idx);
+ var box=$("opts");box.innerHTML="";
+ idx.forEach(function(k){
+  var b=document.createElement("button");b.textContent=d.o[k];
+  b.onclick=function(){pick(b,k)};b.dataset.k=k;box.appendChild(b)});
+}
+function pick(btn,k){
+ if(done)return;done=true;var d=Q[i];var ok=k===d.a;
+ if(ok)pts++;
+ Array.prototype.forEach.call($("opts").children,function(b){
+  b.disabled=true;
+  if(+b.dataset.k===d.a)b.classList.add("right");
+ });
+ if(!ok)btn.classList.add("wrong");
+ $("sc").textContent=pts+" "+(pts===1?"acerto":"acertos");
+ $("fb").innerHTML="<b>"+(ok?"Acertou! A perereca saltou.":"Quase. A resposta certa está em verde.")+"</b>"+d.e;
+ $("fb").classList.remove("hidden");
+ $("next").textContent=i===Q.length-1?"Ver resultado":"Próxima";
+ $("next").classList.remove("hidden");
+ $("next").focus();
+}
+function finish(){
+ var n=Q.length;
+ $("final").textContent=pts+"/"+n;
+ var r=pts>=9?"Mestre do lago":pts>=7?"Perereca experiente":pts>=5?"Girino em crescimento":"Ovo na água";
+ $("rank").textContent=r;
+ $("msg").textContent=pts>=9?"Você domina os anfíbios. Que tal desafiar um colega?":pts>=7?"Muito bom. Revise as perguntas que errou e tente chegar aos dez.":pts>=5?"Você está no caminho. Releia o resumo sobre anfíbios e jogue de novo.":"Todo anfíbio começa pequeno. Leia o resumo e tente outra vez.";
+ show("end");
+}
+$("play").onclick=function(){i=0;pts=0;show("game");render()};
+$("next").onclick=function(){i++;if(i>=Q.length)finish();else render()};
+$("again").onclick=function(){i=0;pts=0;shuffle(Q);show("game");render()};
+</script>
+</body>
+</html>
